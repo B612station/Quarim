@@ -7,7 +7,7 @@ import { POLES } from '@/lib/types'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ fullName: '', email: '', password: '', pole: '', orgName: '' })
+  const [form, setForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '', pole: '', orgName: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -16,6 +16,8 @@ export default function RegisterPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     if (!form.pole) { setError('Sélectionnez votre pôle de travail'); return }
+    if (form.password !== form.confirmPassword) { setError('Les mots de passe ne correspondent pas'); return }
+    if (form.password.length < 8) { setError('Le mot de passe doit contenir au moins 8 caractères'); return }
     setLoading(true); setError('')
     const sb = createClient()
     const { data, error: err } = await sb.auth.signUp({
@@ -24,8 +26,6 @@ export default function RegisterPage() {
       options: { data: { full_name: form.fullName } }
     })
     if (err || !data.user) { setError(err?.message || 'Erreur à l\'inscription'); setLoading(false); return }
-
-    // Créer le profil — role employee par défaut
     const { error: profileErr } = await sb.from('profiles').insert({
       id: data.user.id,
       email: form.email,
@@ -43,7 +43,6 @@ export default function RegisterPage() {
       <div className="auth-box">
         <div className="auth-wordmark">Quarim</div>
         <span className="auth-sub">Créer un compte</span>
-
         <form onSubmit={handleRegister}>
           <div className="field">
             <span className="label">Nom complet</span>
@@ -56,6 +55,10 @@ export default function RegisterPage() {
           <div className="field">
             <span className="label">Mot de passe</span>
             <input type="password" placeholder="8 caractères minimum" value={form.password} onChange={e => set('password', e.target.value)} required minLength={8}/>
+          </div>
+          <div className="field">
+            <span className="label">Confirmer le mot de passe</span>
+            <input type="password" placeholder="Répétez votre mot de passe" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} required/>
           </div>
           <div className="field">
             <span className="label">Votre pôle de travail</span>
@@ -73,7 +76,6 @@ export default function RegisterPage() {
             {loading ? <><span className="spinner"/> Création…</> : 'Créer mon compte'}
           </button>
         </form>
-
         <div className="auth-footer">
           <Link href="/login">Déjà un compte ? Se connecter</Link>
         </div>
